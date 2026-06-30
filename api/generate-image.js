@@ -29,8 +29,7 @@ Style: friendly high-end corporate 3D illustration, single accent color ${color}
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
       // dall-e-3: 조직 인증 없이 크레딧만으로 동작. (gpt-image-1로 바꾸려면 OpenAI 조직 인증 후 model만 교체)
-      body: JSON.stringify({ model: 'dall-e-3', prompt, size: '1792x1024', quality: 'standard', response_format: 'url', n: 1 })
-    });
+      body: JSON.stringify({ model: 'dall-e-3', prompt, size: '1792x1024', n: 1 })
     if (!r.ok) {
       const t = await r.text().catch(() => '');
       res.status(500).json({ error: 'OpenAI ' + r.status + ' ' + t });

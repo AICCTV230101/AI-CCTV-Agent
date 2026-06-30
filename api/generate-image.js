@@ -5,6 +5,7 @@
 // 입력(JSON): { site, coreAI:[], color }   ← color 는 선택한 템플릿 색(HEX)
 // 출력(JSON): { image }  (data:image/png;base64,...)  또는  { url }
 
+export const maxDuration = 60;
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
 

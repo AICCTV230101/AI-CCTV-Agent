@@ -1,4 +1,4 @@
-// generate.js — 뉴스(웹검색, 방탄) / 문구(디테일)
+// generate.js — 뉴스(Responses API 웹검색, 방탄) / 문구(디테일)
 export const maxDuration = 60;
  
 export default async function handler(req, res) {
@@ -86,15 +86,29 @@ function cleanText(s) {
     .trim();
 }
  
-async function callSearch(key, user) {
-  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+// 웹검색 — OpenAI Responses API의 web_search 도구 (실제 웹 검색)
+async function callSearch(key, q) {
+  const r = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-    body: JSON.stringify({ model: 'gpt-4o-mini-search-preview', messages: [{ role: 'user', content: user }] })
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      tools: [{ type: 'web_search_preview' }],
+      input: q
+    })
   });
   if (!r.ok) { const t = await r.text().catch(() => ''); throw new Error('OpenAI ' + r.status + ' ' + t); }
   const d = await r.json();
-  return (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || '';
+  if (d.output_text) return d.output_text;
+  let text = '';
+  if (Array.isArray(d.output)) {
+    for (const it of d.output) {
+      if (it && it.type === 'message' && Array.isArray(it.content)) {
+        for (const c of it.content) { if (c && c.type === 'output_text' && c.text) text += c.text; }
+      }
+    }
+  }
+  return text;
 }
  
 async function callOpenAI(key, model, sys, user, jsonMode) {

@@ -1,4 +1,4 @@
-// /api/generate-image.js — Vercel Serverless Function
+// build v2 — dall-e-3, response_format 제거 (400 에러 해결)
 export const maxDuration = 60;
  
 export default async function handler(req, res) {

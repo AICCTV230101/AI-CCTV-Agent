@@ -1,4 +1,4 @@
-// generate.js — 뉴스(Responses API 웹검색, 방탄) / 문구(디테일)
+// generate.js — 뉴스(구글뉴스 RSS 실제검색 → GPT요약, 방탄) / 문구(디테일)
 export const maxDuration = 60;
  
 export default async function handler(req, res) {
@@ -14,14 +14,17 @@ export default async function handler(req, res) {
   const MODEL = 'gpt-4o-mini';
  
   if (mode === 'news') {
-    const q =
-`"${cust}"(업종/현장: ${site})와 관련해, 웹에서 최근 실제 보도된 안전사고·산업재해·화재·보안 사고 뉴스를 찾아라.
-그중 AI CCTV(영상분석)로 '사전 예방·조기 감지·즉시 대응'이 가능한 유형을 골라, 제안서 도입근거로 쓸 한국어 한 문장(80~110자)으로 요약하라.
-- 실제 보도 기반으로만. 사건·수치를 지어내지 말 것.
-- "${cust}" 직접 사례가 없으면 같은 업종(${site})의 최근 실제 사고로.
-- 문장만 출력(따옴표·링크·출처·각주 없이).`;
     let out = '';
-    try { out = cleanText(await callSearch(key, q)); } catch (e) { out = ''; }
+    let titles = [];
+    try { titles = await googleNews(cust, site); } catch (e) { titles = []; }
+    if (titles.length) {
+      try {
+        out = cleanText(await callOpenAI(key, MODEL,
+          '당신은 B2B 안전솔루션 제안서 카피라이터입니다. 사실 기반, 한 문장.',
+          `다음은 "${cust}"(${site}) 관련 최근 실제 뉴스 제목들이다:\n- ${titles.join('\n- ')}\n\n이 중 AI CCTV(영상분석)로 사전 예방·조기 감지·즉시 대응이 가능한 안전사고를 근거로, 제안서 도입근거 한 문장(80~110자)을 작성하라. 위 제목에 실제로 근거해서만, 수치·날짜는 지어내지 말 것. 문장만 출력.`,
+          false));
+      } catch (e) { out = ''; }
+    }
     if (!out || out.length < 12) {
       try {
         out = cleanText(await callOpenAI(key, MODEL,
@@ -86,29 +89,30 @@ function cleanText(s) {
     .trim();
 }
  
-// 웹검색 — OpenAI Responses API의 web_search 도구 (실제 웹 검색)
-async function callSearch(key, q) {
-  const r = await fetch('https://api.openai.com/v1/responses', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      tools: [{ type: 'web_search_preview' }],
-      input: q
-    })
-  });
-  if (!r.ok) { const t = await r.text().catch(() => ''); throw new Error('OpenAI ' + r.status + ' ' + t); }
-  const d = await r.json();
-  if (d.output_text) return d.output_text;
-  let text = '';
-  if (Array.isArray(d.output)) {
-    for (const it of d.output) {
-      if (it && it.type === 'message' && Array.isArray(it.content)) {
-        for (const c of it.content) { if (c && c.type === 'output_text' && c.text) text += c.text; }
+// 실제 뉴스 검색 — 구글 뉴스 RSS (무료, API키 불필요)
+async function googleNews(cust, site) {
+  const queries = [cust + ' 안전사고', cust + ' 사고', site + ' 안전사고'];
+  for (const query of queries) {
+    try {
+      const url = 'https://news.google.com/rss/search?q=' + encodeURIComponent(query) + '&hl=ko&gl=KR&ceid=KR:ko';
+      const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      if (!r.ok) continue;
+      const xml = await r.text();
+      const titles = [];
+      const re = /<item>[\s\S]*?<title>([\s\S]*?)<\/title>/g;
+      let m;
+      while ((m = re.exec(xml)) !== null && titles.length < 5) {
+        const t = m[1]
+          .replace(/<!\[CDATA\[|\]\]>/g, '')
+          .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+          .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+          .trim();
+        if (t) titles.push(t);
       }
-    }
+      if (titles.length) return titles;
+    } catch (e) { /* 다음 쿼리 시도 */ }
   }
-  return text;
+  return [];
 }
  
 async function callOpenAI(key, model, sys, user, jsonMode) {

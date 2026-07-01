@@ -1,4 +1,4 @@
-// build v3 — gpt-image-1, 깨끗한 일러스트(글자·아이콘 없이) + 왼쪽 비움
+// build v4 — 현장유형에 맞는 장면 (공장 강제 X) / gpt-image-1
 export const maxDuration = 60;
  
 export default async function handler(req, res) {
@@ -14,10 +14,11 @@ export default async function handler(req, res) {
   const ai = Array.isArray(coreAI) ? coreAI.filter(Boolean).join(', ') : String(coreAI || '');
  
   const prompt =
-`Clean modern 3D isometric ILLUSTRATION for an enterprise "AI CCTV" proposal cover — NOT a photograph.
-Composition: wide 16:9 banner. The LEFT ~40% is soft empty negative space (bright, light, gently fading out). The ${site} scene sits on the RIGHT ~60%: one worker in a ${color} safety vest and white hard hat near the center-right, plus clean stylized machinery/equipment on the far right.
-Bright light background with a very subtle ${color} tint. Single accent color ${color}. Soft, minimal, high-end corporate 3D illustration.
-ABSOLUTELY NO text, NO labels, NO detection boxes, NO flame or warning icons, NO UI overlays, NO logos, NO watermark — keep the whole image completely clean.${ai ? ' (site AI focus: ' + ai + ')' : ''}${extra ? '\nAlso: ' + extra : ''}`;
+`Clean modern 3D isometric illustration for an enterprise "AI CCTV" proposal cover — NOT a photograph, no photorealism.
+Composition: wide 16:9 banner. The LEFT ~40% is soft empty light negative space (for text overlay later); the main scene sits on the RIGHT ~60%.
+Scene: a realistic, recognizable "${site}" environment showing the people and objects that are actually typical of a real "${site}"${ai ? ' (safety focus: ' + ai + ')' : ''} — it must clearly look like a "${site}", NOT a factory or construction site unless "${site}" actually is one — being monitored by one or two small stylized CCTV cameras mounted on the ceiling or wall.
+Bright, light background with a very subtle ${color} tint. Single accent color ${color}. Soft, minimal, friendly high-end corporate 3D illustration.
+ABSOLUTELY NO text, NO labels, NO detection boxes, NO warning icons, NO UI overlays, NO logos, NO watermark — keep the whole image completely clean.${extra ? '\nAlso: ' + extra : ''}`;
  
   try {
     const r = await fetch('https://api.openai.com/v1/images/generations', {

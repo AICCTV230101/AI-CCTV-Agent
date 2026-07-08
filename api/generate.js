@@ -1,22 +1,27 @@
-// generate.js — 뉴스(구글뉴스 RSS 실제검색 → GPT요약, 방탄) / 문구(디테일)
+// build v2 — 뉴스: 실제 웹검색(gpt-4o-mini-search-preview) / 문구: 디테일 강화
+// /api/generate.js — Vercel Serverless Function
+// 필요한 환경변수: OPENAI_API_KEY
+// 뉴스 검색이 느려서(웹검색) 함수 제한시간 60초로 늘림
 export const maxDuration = 60;
- 
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
- 
+
   const key = process.env.OPENAI_API_KEY;
   if (!key) { res.status(500).json({ error: 'OPENAI_API_KEY 미설정 (Vercel 환경변수 확인)' }); return; }
- 
+
   let body = {};
   try { body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {}); } catch (e) { body = {}; }
- 
+
   const { mode, cust = '고객사', site = '현장', coreAI = [], newsRisk = '' } = body;
-  const MODEL = 'gpt-4o-mini';
- 
+  const MODEL = 'gpt-4o-mini'; // 문구 생성. 더 디테일 원하면 'gpt-4o'로.
+
+  // ── 모드 1) 최근 사고·뉴스 : 구글뉴스 RSS(무료·키불필요) 실제검색 → GPT 요약 ──
   if (mode === 'news') {
     let out = '';
     let titles = [];
     try { titles = await googleNews(cust, site); } catch (e) { titles = []; }
+    // 1) 실제 뉴스 제목이 있으면 → 그 제목에 근거해 도입근거 한 문장
     if (titles.length) {
       try {
         out = cleanText(await callOpenAI(key, MODEL,
@@ -25,6 +30,7 @@ export default async function handler(req, res) {
           false));
       } catch (e) { out = ''; }
     }
+    // 2) 폴백 — 제목 못찾음/실패 시 업종 일반 트렌드
     if (!out || out.length < 12) {
       try {
         out = cleanText(await callOpenAI(key, MODEL,
@@ -33,14 +39,17 @@ export default async function handler(req, res) {
           false));
       } catch (e) { out = ''; }
     }
+    // 3) 최후 안전망
     if (!out || out.length < 12) {
       out = `최근 ${site} 현장에서 안전·보안 사고가 지속 발생하며, 사고를 사고 전에 감지·예방하는 AI CCTV의 필요성이 커지고 있습니다.`;
     }
     res.status(200).json({ news: out });
     return;
   }
- 
+
+  // ── 모드 2) 제안서 생성형 문구 (디테일 강화) ──
   const aiList = Array.isArray(coreAI) ? coreAI.filter(Boolean).join(', ') : String(coreAI || '');
+
   const sys =
 `당신은 LG U+ 기업영업의 시니어 제안 컨설턴트입니다. AI CCTV(영상분석) 제안서 문구를 한국어로 작성합니다.
 원칙:
@@ -49,22 +58,24 @@ export default async function handler(req, res) {
 - 추상적 표현 대신 현장유형·AI기능에 '밀착한 구체적' 표현을 쓸 것.
 - 핵심 키워드: "사후 대응 → 사전 예방", "사고 전 조기 감지", "발생 시 즉시 초동 대응".
 - 반드시 지정한 JSON 키만 채운 순수 JSON으로만 답할 것.`;
+
   const user =
 `[입력]
 고객사: ${cust}
 현장유형: ${site}
 핵심·추천 AI 기능: ${aiList || '화재/재난 감지, 작업자 안전 감지'}
 최근 사고/뉴스 근거: ${newsRisk || '(없음 — 현장유형 일반 위험 트렌드 사용)'}
- 
+
 [작성 항목 — 현장유형과 AI기능에 밀착해서 구체적으로]
 - sub    : 표지 서브카피 한 줄. "${site} 현장의 위험을 사고 전에 감지하고, 발생 시 즉시 대응하는 …" 형태. 70~100자.
-- asis   : '제안 배경' 리드 문단. 막연한 표현 대신 ${site} 현장의 '구체적' 위험(끼임·추락·화재·충돌·침입 등 현장유형에 맞게)과 선택 AI기능이 짚어내는 지점을 디테일하게, newsRisk를 자연스럽게 녹여서. 단 길게 늘이지 말고 2문장 내외로 간결하게.
+- asis   : '제안 배경' 리드 문단. 막연한 표현 대신 ${site} 현장의 '구체적' 위험(현장유형에 맞는 끼임·추락·화재·충돌·침입 등)과 선택 AI기능이 짚어내는 지점을 디테일하게, newsRisk를 자연스럽게 녹여서. 단 길게 늘이지 말고 2문장 내외로 간결하게.
 - effects: '기대 효과' 정확히 4개 카드 [{ "t": 제목, "d": 설명 }].
            t = 제목(8~16자, 핵심 효과). d = 설명(35~60자, "어떤 AI기능이 → 어떻게 감지·대응 → 어떤 효과"를 구체적이되 간결하게).
-           선택한 AI 기능 각각에 대응되게.
- 
+           선택한 AI 기능 각각에 대응되게 작성.
+
 [출력] 아래 JSON 하나만:
 {"sub":"","asis":"","effects":[{"t":"","d":""},{"t":"","d":""},{"t":"","d":""},{"t":"","d":""}]}`;
+
   try {
     const raw = await callOpenAI(key, MODEL, sys, user, true);
     let out = {};
@@ -77,18 +88,19 @@ export default async function handler(req, res) {
     res.status(500).json({ error: String(e && e.message || e) });
   }
 }
- 
+
+// 검색 결과에서 링크·각주·출처 등을 제거해 한 문장만 남김
 function cleanText(s) {
   return String(s || '')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/【[^】]*】/g, '')
-    .replace(/\(https?:\/\/[^)]+\)/g, '')
-    .replace(/https?:\/\/\S+/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // 마크다운 링크 → 텍스트
+    .replace(/【[^】]*】/g, '')                 // 인용 각주
+    .replace(/\(https?:\/\/[^)]+\)/g, '')      // (url)
+    .replace(/https?:\/\/\S+/g, '')            // 남은 url
     .replace(/\s+/g, ' ')
     .replace(/^["'\s]+|["'\s]+$/g, '')
     .trim();
 }
- 
+
 // 실제 뉴스 검색 — 구글 뉴스 RSS (무료, API키 불필요)
 async function googleNews(cust, site) {
   const queries = [cust + ' 안전사고', cust + ' 사고', site + ' 안전사고'];
@@ -114,7 +126,8 @@ async function googleNews(cust, site) {
   }
   return [];
 }
- 
+
+// Chat Completions 헬퍼
 async function callOpenAI(key, model, sys, user, jsonMode) {
   const r = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',

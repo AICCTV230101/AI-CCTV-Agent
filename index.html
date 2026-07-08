@@ -937,7 +937,7 @@ async function aiGenCover(){
     var colorMap={magenta:'#E6007E',clean:'#3A3A46',blue:'#1F5FE0',brand:(S.brandColor||'#E6007E')};
     var color=colorMap[S.template||'magenta']||'#E6007E';
     var extra=(document.getElementById('coverExtra')?document.getElementById('coverExtra').value:(S.coverExtra||''));
-    var resp=await fetch('/api/generate-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({site:site,coreAI:ai,color:color,extra:extra})});
+    var resp=await fetch('/api/generate-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({site:site,coreAI:ai,color:color,extra:extra,cust:S.cust||"",project:S.project||""})});
     var d=await resp.json().catch(function(){return {};});
     if(resp.ok && (d.image||d.url)){ S.coverImg=d.image||d.url; genStep6(); }
     else { throw new Error((d&&d.error)||'fail'); }
@@ -1670,7 +1670,7 @@ function openEditor(){
 
   const doc=`
   <div class="ed-page ed-cover" style="background:${_th.bg}">
-    ${_showIllu?`<div class="ed-illu ed-box vz vz-gen">${cover}<div class="cov-det cd-worker"><span class="cd-cn"></span><span class="cd-lb">작업자 감지</span></div><div class="cov-det cd-fire"><span class="cd-cn"></span><span class="cd-lb f">화재 감지</span></div><div class="ed-kw">${kwChips}</div><span class="ed-rh"></span></div>`:''}
+    ${_showIllu?`<div class="ed-illu ed-box vz vz-gen">${cover}<div class="ed-kw">${kwChips}</div><span class="ed-rh"></span></div>`:''}
     <div class="ed-ttlwrap ed-box" style="${_showIllu?'':'top:36%'}">
       <div class="ed-eyebrow" style="color:${_th.eye}">AI CCTV ${proj?'<span class="vz vz-map">'+edEsc(proj)+'</span> ':''}제안</div>
       <h1 style="color:${_th.ti}"><span class="lgu" style="color:${_th.cu}">LG U+</span><span class="xx" style="color:${_th.sub}"> × </span><span class="vz vz-map">${edEsc(cust)}</span> AI CCTV 구축 제안서</h1>

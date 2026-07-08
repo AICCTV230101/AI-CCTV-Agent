@@ -1,25 +1,34 @@
-// build v4 — 현장유형에 맞는 장면 (공장 강제 X) / gpt-image-1
+// build v4 — gpt-image-1 / 현장유형·고객사명으로 장소 추측
+// /api/generate-image.js — Vercel Serverless Function (Node 18+)
+// HTML의 STEP6 "🪄 AI로 표지 이미지 생성"이 호출하는 엔드포인트.
+// 필요한 환경변수: OPENAI_API_KEY
+//
+// 입력(JSON): { site, coreAI:[], color }   ← color 는 선택한 템플릿 색(HEX)
+// 출력(JSON): { image }  (data:image/png;base64,...)  또는  { url }
+
+// 이미지 생성은 20~40초 걸림 → Vercel 기본 10초를 넘어서 60초로 늘림
 export const maxDuration = 60;
- 
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
- 
+
   const key = process.env.OPENAI_API_KEY;
   if (!key) { res.status(500).json({ error: 'OPENAI_API_KEY 미설정' }); return; }
- 
+
   let body = {};
   try { body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {}); } catch (e) {}
- 
-  const { site = '산업 현장', coreAI = [], color = '#E6007E', extra = '' } = body;
+
+  const { site = '산업 현장', coreAI = [], color = '#E6007E', extra = '', cust = '', project = '' } = body;
   const ai = Array.isArray(coreAI) ? coreAI.filter(Boolean).join(', ') : String(coreAI || '');
- 
+  const hint = [site, cust, project].filter(Boolean).join(' / ');
+
   const prompt =
 `Clean modern 3D isometric illustration for an enterprise "AI CCTV" proposal cover — NOT a photograph, no photorealism.
-Composition: wide 16:9 banner. The LEFT ~40% is soft empty light negative space (for text overlay later); the main scene sits on the RIGHT ~60%.
-Scene: a realistic, recognizable "${site}" environment showing the people and objects that are actually typical of a real "${site}"${ai ? ' (safety focus: ' + ai + ')' : ''} — it must clearly look like a "${site}", NOT a factory or construction site unless "${site}" actually is one — being monitored by one or two small stylized CCTV cameras mounted on the ceiling or wall.
-Bright, light background with a very subtle ${color} tint. Single accent color ${color}. Soft, minimal, friendly high-end corporate 3D illustration.
-ABSOLUTELY NO text, NO labels, NO detection boxes, NO warning icons, NO UI overlays, NO logos, NO watermark — keep the whole image completely clean.${extra ? '\nAlso: ' + extra : ''}`;
- 
+Context clues about the place: "${hint}". Read these Korean words and infer the EXACT real-world setting — e.g. 어린이집→a bright daycare with young children and a teacher; 병원→hospital ward; 물류/창고→warehouse with shelving and forklifts; 학교→school classroom; 매장/리테일/백화점→retail store; 제조/공장/생산→factory line; 건설→construction site; 항만→port. The scene MUST clearly match that place. Do NOT default to a factory or construction site unless the clues actually indicate one.
+Composition: wide 16:9 banner. The LEFT ~40% is soft empty light negative space (for text overlay later); the main scene sits on the RIGHT ~60%, monitored by one or two small stylized CCTV cameras on the ceiling or wall.
+Bright, light background with a very subtle ${color} tint. Single accent color ${color}. Soft, minimal, friendly high-end corporate 3D illustration.${ai ? '\nSafety focus (subtle, no text): ' + ai + '.' : ''}
+ABSOLUTELY NO text, NO written words, NO labels, NO detection boxes, NO warning icons, NO logos, NO watermark — keep the whole image completely clean.${extra ? '\nAlso: ' + extra : ''}`;
+
   try {
     const r = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',

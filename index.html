@@ -341,8 +341,96 @@
   .lp-stage.on{box-shadow:0 8px 22px rgba(230,0,126,.15)}
   input:focus,select:focus,textarea:focus{border-color:var(--brand); box-shadow:0 0 0 4px var(--brand-soft)}
 </style>
+<style id="auth-gate-style">
+  body.auth-locked{overflow:hidden}
+  body.auth-locked .shell{display:none !important}
+  .auth-gate{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:28px 18px;background:radial-gradient(900px 560px at 82% -10%, rgba(230,0,126,.28), transparent 58%),radial-gradient(700px 480px at 0% 100%, rgba(110,86,247,.22), transparent 55%),linear-gradient(135deg,#0b0a0d,#171019 62%,#0b0a0d);font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;color:#1a1a1f}
+  .auth-card{width:min(620px,100%);background:#fff;border-radius:24px;box-shadow:0 28px 80px rgba(0,0,0,.48);padding:40px;position:relative;overflow:hidden;animation:authRise .35s ease}
+  .auth-card::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,#E6007E,#FF4D94,#6E56F7)}
+  @keyframes authRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .auth-brand{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .auth-logo{width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#E6007E,#FF4D94);display:grid;place-items:center;color:#fff;font-weight:900;font-size:16px;box-shadow:0 10px 24px rgba(230,0,126,.34)}
+  .auth-team{font-size:18px;font-weight:900;color:#B80064;letter-spacing:-.2px}
+  .auth-card h1{font-size:32px;line-height:1.18;letter-spacing:-1px;margin:14px 0 14px;font-weight:900;color:#18181f}
+  .auth-desc{font-size:19px;font-weight:700;color:#33333d;margin:0 0 12px;line-height:1.55}
+  .auth-policy{font-size:16.5px;color:#5b5b66;line-height:1.75;margin:0 0 24px}
+  .auth-policy b{color:#B80064;font-weight:900}
+  .auth-label{display:block;font-size:19px;font-weight:900;color:#383844;margin-bottom:10px}
+  .auth-input-wrap{display:grid;grid-template-columns:1fr auto;gap:10px}
+  .auth-input-wrap input{width:100%;min-width:0;border:1.5px solid #e6e6ee;border-radius:13px;padding:15px 17px;font-size:16px;font-family:inherit;color:#1a1a1f;background:#fff;outline:none;transition:.15s}
+  .auth-input-wrap input:focus{border-color:#E6007E;box-shadow:0 0 0 4px #FFE4F1}
+  .auth-input-wrap button{border:none;border-radius:13px;padding:0 20px;min-width:140px;background:linear-gradient(135deg,#E6007E,#FF3D8E);color:#fff;font-size:16px;font-weight:900;font-family:inherit;cursor:pointer;box-shadow:0 8px 20px rgba(230,0,126,.28);transition:.15s}
+  .auth-input-wrap button:hover{transform:translateY(-1px)}
+  .auth-input-wrap button:disabled{opacity:.6;cursor:not-allowed;transform:none}
+  .auth-msg{min-height:22px;margin:12px 0 0;font-size:14px;font-weight:800;color:#B80064;line-height:1.5}
+  .auth-msg.ok{color:#128047}
+  .auth-contact{margin-top:24px;padding:16px 18px;background:#fafafd;border:1px solid #ececf3;border-radius:14px;color:#5b5b66;font-size:15px;line-height:1.8}
+  .auth-contact-title{font-size:14px;font-weight:900;color:#1a1a1f;margin-bottom:4px}
+  .auth-step2{display:none}
+  .auth-step2.on{display:block}
+  .auth-step1.hide{display:none}
+  .auth-back{background:none;border:none;color:#5b5b66;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px;padding:0;font-family:inherit}
+  .auth-back:hover{color:#B80064}
+  .auth-tip{margin-top:14px;padding:12px 14px;background:#fff8e1;border:1px solid #ffe089;border-radius:10px;font-size:13px;color:#7a5c00;line-height:1.6}
+  @media(max-width:620px){.auth-card{padding:28px 22px}.auth-card h1{font-size:26px}.auth-input-wrap{grid-template-columns:1fr}.auth-input-wrap button{height:52px;width:100%}}
+</style>
 </head>
-<body>
+<body class="auth-locked">
+ 
+<div id="authGate" class="auth-gate">
+  <div class="auth-card">
+ 
+    <div class="auth-step1" id="authStep1">
+      <div class="auth-brand">
+        <div class="auth-logo">U+</div>
+        <div class="auth-team">LG U+ SMB사업트라이브 AI CCTV스쿼드</div>
+      </div>
+      <h1>AI CCTV Sales Materials Agent</h1>
+      <p class="auth-desc">구축형 CCTV 초도 제안서 생성을 지원하는 AI Agent입니다.</p>
+      <p class="auth-policy">
+        본 서비스는 LG U+ 내부 업무용으로 제공되며,<br>
+        보안 강화를 위해 <b>LG U+ 업무용 이메일(@lguplus.co.kr) 인증 후 이용 가능</b>합니다.
+      </p>
+      <label class="auth-label" for="authEmail">업무용 이메일</label>
+      <div class="auth-input-wrap">
+        <input id="authEmail" type="email" placeholder="LG U+ 업무용 이메일을 입력해 주세요. 예) jamielee@lguplus.co.kr" autocomplete="email">
+        <button id="authSendBtn" type="button">인증번호 발송</button>
+      </div>
+      <p id="authMsg1" class="auth-msg" aria-live="polite"></p>
+      <div class="auth-contact">
+        <div class="auth-contact-title">문의사항</div>
+        <div>📧 aicctvsquad@lguplus.co.kr</div>
+        <div>📧 jamielee@lguplus.co.kr</div>
+      </div>
+    </div>
+ 
+    <div class="auth-step2" id="authStep2">
+      <button class="auth-back" id="authBackBtn">← 이메일 다시 입력</button>
+      <div class="auth-brand">
+        <div class="auth-logo">U+</div>
+        <div class="auth-team">LG U+ SMB사업트라이브 AI CCTV스쿼드</div>
+      </div>
+      <h1>인증번호 입력</h1>
+      <p class="auth-desc">입력하신 이메일로 발송된 <b>6자리 인증번호</b>를 입력해 주세요.</p>
+      <p class="auth-policy">
+        보낸 이메일: <b id="authSentEmail" style="color:#B80064"></b><br>
+        인증번호는 <b>10분</b> 동안 유효합니다.
+      </p>
+      <label class="auth-label" for="authCode">인증번호</label>
+      <div class="auth-input-wrap">
+        <input id="authCode" type="text" inputmode="numeric" maxlength="6" placeholder="6자리 숫자 입력" autocomplete="one-time-code">
+        <button id="authVerifyBtn" type="button">인증 확인</button>
+      </div>
+      <p id="authMsg2" class="auth-msg" aria-live="polite"></p>
+      <div class="auth-tip">
+        💡 인증번호 메일이 오지 않으면 <b>스팸함</b>을 확인해 주세요.<br>
+        (현재 프로토타입 발신자: onboarding@resend.dev)
+      </div>
+    </div>
+ 
+  </div>
+</div>
+ 
 <div class="shell">
 <aside id="side">
   <div class="side-brand"><span class="side-dot">U+</span><div><b>AI CCTV</b><small>Sales Materials Agent</small></div></div>
@@ -400,6 +488,138 @@
 <div class="modal-bg" id="modalBg"><div class="modal" id="modalBody"></div></div>
 
 <script>
+/* ===== LG U+ 이메일 OTP 게이트 ===== */
+(function(){
+  var KEY_EMAIL = 'aicctv_agent_auth_email';
+  var email = '';
+ 
+  function $id(id){ return document.getElementById(id); }
+ 
+  function unlock(e){
+    try{ sessionStorage.setItem(KEY_EMAIL, e); }catch(err){}
+    document.body.classList.remove('auth-locked');
+    var g = $id('authGate');
+    if(g) g.style.display = 'none';
+  }
+ 
+  function showStep2(e){
+    email = e;
+    $id('authStep1').classList.add('hide');
+    $id('authStep2').classList.add('on');
+    $id('authSentEmail').textContent = e;
+    setTimeout(function(){ var c = $id('authCode'); if(c) c.focus(); }, 100);
+  }
+ 
+  function backToStep1(){
+    $id('authStep1').classList.remove('hide');
+    $id('authStep2').classList.remove('on');
+    var msg = $id('authMsg2'); if(msg){ msg.textContent = ''; msg.classList.remove('ok'); }
+    var c = $id('authCode'); if(c) c.value = '';
+  }
+ 
+  async function sendOtp(){
+    var input = $id('authEmail');
+    var btn = $id('authSendBtn');
+    var msg = $id('authMsg1');
+    var e = String(input.value || '').trim().toLowerCase();
+ 
+    if(!e){ msg.textContent = 'LG U+ 업무용 이메일을 입력해 주세요.'; input.focus(); return; }
+    if(!e.endsWith('@lguplus.co.kr')){
+      alert('접근이 제한되었습니다.\n\n본 서비스는 LG U+ 내부 업무용으로 제공되며,\nLG U+ 업무용 이메일(@lguplus.co.kr) 인증 후 이용 가능합니다.');
+      msg.textContent = 'LG U+ 업무용 이메일(@lguplus.co.kr)로 다시 시도해 주세요.';
+      input.focus(); return;
+    }
+ 
+    btn.disabled = true;
+    var oldText = btn.textContent;
+    btn.textContent = '발송 중...';
+    msg.textContent = '';
+ 
+    try{
+      var resp = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: e })
+      });
+      var data = await resp.json().catch(function(){ return {}; });
+ 
+      if(resp.ok && data.ok){
+        showStep2(e);
+      } else {
+        msg.textContent = (data && data.error) || '발송에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+      }
+    } catch(err){
+      msg.textContent = '네트워크 오류가 발생했습니다. 다시 시도해 주세요.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }
+  }
+ 
+  async function verifyOtp(){
+    var input = $id('authCode');
+    var btn = $id('authVerifyBtn');
+    var msg = $id('authMsg2');
+    var code = String(input.value || '').trim();
+ 
+    if(!/^\d{6}$/.test(code)){
+      msg.classList.remove('ok');
+      msg.textContent = '6자리 숫자를 입력해 주세요.';
+      input.focus(); return;
+    }
+ 
+    btn.disabled = true;
+    var oldText = btn.textContent;
+    btn.textContent = '확인 중...';
+    msg.textContent = '';
+    msg.classList.remove('ok');
+ 
+    try{
+      var resp = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: email, code: code })
+      });
+      var data = await resp.json().catch(function(){ return {}; });
+ 
+      if(resp.ok && data.ok){
+        msg.classList.add('ok');
+        msg.textContent = '인증 완료. Agent에 접속합니다.';
+        setTimeout(function(){ unlock(data.email || email); }, 400);
+      } else {
+        msg.textContent = (data && data.error) || '인증에 실패했습니다.';
+      }
+    } catch(err){
+      msg.textContent = '네트워크 오류가 발생했습니다. 다시 시도해 주세요.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }
+  }
+ 
+  function bind(){
+    // 이미 인증한 이메일이면 자동 통과
+    var saved = '';
+    try{ saved = sessionStorage.getItem(KEY_EMAIL) || ''; }catch(err){}
+    if(saved && saved.endsWith('@lguplus.co.kr')){ unlock(saved); return; }
+ 
+    var sendBtn = $id('authSendBtn');
+    var verifyBtn = $id('authVerifyBtn');
+    var backBtn = $id('authBackBtn');
+    var emailInput = $id('authEmail');
+    var codeInput = $id('authCode');
+ 
+    if(sendBtn) sendBtn.addEventListener('click', sendOtp);
+    if(verifyBtn) verifyBtn.addEventListener('click', verifyOtp);
+    if(backBtn) backBtn.addEventListener('click', backToStep1);
+    if(emailInput) emailInput.addEventListener('keydown', function(e){ if(e.key==='Enter') sendOtp(); });
+    if(codeInput) codeInput.addEventListener('keydown', function(e){ if(e.key==='Enter') verifyOtp(); });
+  }
+ 
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', bind); }
+  else { bind(); }
+})();
+ 
 /* ===== 데이터 (설계안 V3.0 · 시트3·4) ===== */
 const AI = {'화재/재난 감지':'🔥','작업자 안전 감지':'🦺','보안/침입 감지':'🚨','차량/물류 이벤트':'🚛','출입 관리':'🪪','이상행동 분석':'🧠','밀집/혼잡 분석':'👥'};
 const AIDESC = {

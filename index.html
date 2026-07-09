@@ -518,47 +518,24 @@
   }
  
   async function sendOtp(){
-    var input = $id('authEmail');
-    var btn = $id('authSendBtn');
-    var msg = $id('authMsg1');
-    var e = String(input.value || '').trim().toLowerCase();
+  var input = $id('authEmail');
+  var msg = $id('authMsg1');
+  var e = String(input.value || '').trim().toLowerCase();
  
-    if(!e){ msg.textContent = 'LG U+ 업무용 이메일을 입력해 주세요.'; input.focus(); return; }
-    if(!e.endsWith('@lguplus.co.kr')){
-      alert('접근이 제한되었습니다.\n\n본 서비스는 LG U+ 내부 업무용으로 제공되며,\nLG U+ 업무용 이메일(@lguplus.co.kr) 인증 후 이용 가능합니다.');
-      msg.textContent = 'LG U+ 업무용 이메일(@lguplus.co.kr)로 다시 시도해 주세요.';
-      input.focus(); return;
-    }
- 
-    btn.disabled = true;
-    var oldText = btn.textContent;
-    btn.textContent = '발송 중...';
-    msg.textContent = '';
- 
-    try{
-      var resp = await fetch('/api/send-otp', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ email: e })
-      });
-      var data = await resp.json().catch(function(){ return {}; });
- 
-      if(resp.ok && data.ok){
-        showStep2(e);
-      } else {
-        msg.textContent = (data && data.error) || '발송에 실패했습니다. 잠시 후 다시 시도해 주세요.';
-      }
-    } catch(err){
-      msg.textContent = '네트워크 오류가 발생했습니다. 다시 시도해 주세요.';
-    } finally {
-      btn.disabled = false;
-      btn.textContent = oldText;
-    }
+  if(!e){ msg.textContent = 'LG U+ 업무용 이메일을 입력해 주세요.'; input.focus(); return; }
+  if(!e.endsWith('@lguplus.co.kr')){
+    alert('접근이 제한되었습니다.\n\n본 서비스는 LG U+ 내부 업무용으로 제공되며,\nLG U+ 업무용 이메일(@lguplus.co.kr) 인증 후 이용 가능합니다.');
+    msg.textContent = 'LG U+ 업무용 이메일(@lguplus.co.kr)로 다시 시도해 주세요.';
+    input.focus(); return;
   }
  
+  // ===== 시연용 임시 모드 (Azure SSO 전환 전까지) =====
+  // 실제 메일 발송 없이 바로 인증번호 입력 화면으로 이동
+  showStep2(e);
+}
+  
   async function verifyOtp(){
     var input = $id('authCode');
-    var btn = $id('authVerifyBtn');
     var msg = $id('authMsg2');
     var code = String(input.value || '').trim();
  
@@ -568,33 +545,11 @@
       input.focus(); return;
     }
  
-    btn.disabled = true;
-    var oldText = btn.textContent;
-    btn.textContent = '확인 중...';
-    msg.textContent = '';
-    msg.classList.remove('ok');
- 
-    try{
-      var resp = await fetch('/api/verify-otp', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ email: email, code: code })
-      });
-      var data = await resp.json().catch(function(){ return {}; });
- 
-      if(resp.ok && data.ok){
-        msg.classList.add('ok');
-        msg.textContent = '인증 완료. Agent에 접속합니다.';
-        setTimeout(function(){ unlock(data.email || email); }, 400);
-      } else {
-        msg.textContent = (data && data.error) || '인증에 실패했습니다.';
-      }
-    } catch(err){
-      msg.textContent = '네트워크 오류가 발생했습니다. 다시 시도해 주세요.';
-    } finally {
-      btn.disabled = false;
-      btn.textContent = oldText;
-    }
+    // ===== 시연용 임시 모드 (Azure SSO 전환 전까지) =====
+    // 6자리 숫자면 무조건 통과
+    msg.classList.add('ok');
+    msg.textContent = '인증 완료. Agent에 접속합니다.';
+    setTimeout(function(){ unlock(email); }, 400);
   }
  
   function bind(){
